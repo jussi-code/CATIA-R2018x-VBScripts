@@ -1,0 +1,55 @@
+Language="VBSCRIPT"
+
+Sub CATMain()
+
+dim plme as PLMEntities
+set plme =CATIA.ActiveEditor.ActiveObject
+
+dim plmeos as VPMOccurrences
+set plmeos = plme.Occurrences
+
+'''''''''''''''''''''''''''''katsoo onko valinta osa,alikokoonpano,pääkokoonpano
+
+On Error Resume Next
+dim plment as PLMEntities
+set plment =CATIA.ActiveEditor.Selection
+
+dim sel
+set sel = plment.Item(1)
+
+If Err.Number <>0 Then
+	MsgBox("Poimi osa tai kokoonpano")
+	Wscript.Quit
+	
+End if
+
+msgbox(sel.type)
+
+On Error Goto 0
+
+
+Dim oVPMOccOnSelectedObject As PLMOccurrence
+Set oVPMOccOnSelectedObject = sel.Value
+
+'polku 1 jos kyseessä komponentti tai kokoonpanon ylin taso
+On Error Resume Next
+Set oVPMEntityOnSelectedObject = oVPMOccOnSelectedObject.PLMEntity
+On Error Goto 0
+
+'polku 2 jos kyseessä alikokoonpano
+On Error Resume Next
+Dim oVPMInst As VPMInstance
+Set oVPMInst = oVPMOccOnSelectedObject.InstanceOccurrenceOf     
+Dim oVMPRef As VPMReference
+Set oVPMRef = oVPMInst.ReferenceInstanceOf
+Set oVPMEntityOnSelectedObject = oVPMRef
+On Error Goto 0
+
+'''''''''''''''''''''''''''''
+
+oVPMEntityOnSelectedObject.SetAttributeValue("V_Thickness"), "2"
+'oVPMEntityOnSelectedObject.SetAttributeValue("V_fromExternalID"), ""
+
+msgbox(oVPMEntityOnSelectedObject.GetAttributeValue("V_maturity"))
+
+End Sub
