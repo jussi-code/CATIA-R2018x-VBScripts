@@ -1,0 +1,183 @@
+Language="VBSCRIPT"
+
+Sub CATMain()
+
+dim plme as PLMEntities
+set plme =CATIA.ActiveEditor.ActiveObject
+
+dim plmeos as VPMOccurrences
+set plmeos = plme.Occurrences
+
+'''''''''''''''''''''''''''''katsoo onko valinta osa,alikokoonpano,pääkokoonpano
+
+On Error Resume Next
+dim plment as PLMEntities
+set plment =CATIA.ActiveEditor.Selection
+
+dim sel
+set sel = plment.Item(1)
+
+If Err.Number <>0 Then
+	MsgBox("Poimi osa tai kokoonpano")
+	Exit Sub
+	
+End if
+
+'msgbox(sel.type)
+
+On Error Goto 0
+
+
+Dim oVPMOccOnSelectedObject As PLMOccurrence
+Set oVPMOccOnSelectedObject = sel.Value
+
+'polku 1 jos kyseessä komponentti tai kokoonpanon ylin taso
+On Error Resume Next
+Set oVPMEntityOnSelectedObject = oVPMOccOnSelectedObject.PLMEntity
+On Error Goto 0
+
+'polku 2 jos kyseessä alikokoonpano
+On Error Resume Next
+Dim oVPMInst As VPMInstance
+Set oVPMInst = oVPMOccOnSelectedObject.InstanceOccurrenceOf     
+Dim oVMPRef As VPMReference
+Set oVPMRef = oVPMInst.ReferenceInstanceOf
+Set oVPMEntityOnSelectedObject = oVPMRef
+On Error Goto 0
+
+'''''''''''''''''''''''''''''
+
+
+dim temp_plm_mass as double
+temp_plm_mass=0
+dim temp_mass_ as double
+temp_mass_=0
+dim temp_maturity as string
+temp_maturity=""
+dim temp_warning as string
+temp_warning=""
+
+''''''''''''''''''''''''''''' jos kyseessä kokoonpano niin count suurempi kuin 0
+if plmeos.Count >0 then
+
+	dim plmeo as VPMOccurrence
+	set plmeo = plmeos.Item(1)
+
+	dim plmei as VPMInstance
+	set plmei = plmeo.InstanceOccurrenceOf
+
+	dim plmer as VPMReference
+	set plmer = plmei.ReferenceInstanceOf
+
+	dim plmeri as VPMRepInstance
+	set plmeri = plmer.RepInstances.Item(1)
+
+	dim plmerr as VPMRepReference
+	set plmerr = plmeri.ReferenceInstanceOf
+
+	'msgbox(plmer.name)
+
+
+	dim mass as double
+	mass=0
+
+	dim message_text as string
+	message_text=""
+
+	for i=1 To plmeos.Count
+		dim temp_plmerr as VPMReference
+		
+		set temp_plmerr=plme.Occurrences.Item(i).InstanceOccurrenceOf.ReferenceInstanceOf
+
+		temp_plm_mass=temp_plmerr.GetAttributeValue("Weight_PLM")
+		temp_maturity=temp_plmerr.GetAttributeValue("V_maturity")
+
+		On Error Resume Next
+		temp_mass_=temp_plmerr.GetAttributeValue("V_WCG_Declared_Mass")
+		temp_mass_=temp_plmerr.GetAttributeValue("V_WCG_Mass")
+		On Error Goto 0
+
+
+		if NOT FormatNumber(temp_plm_mass,2)=FormatNumber(temp_mass_,2) and NOT temp_mass_=0 then
+			temp_plm_mass=temp_mass_
+		end if	
+
+		if temp_plm_mass=0 and NOT temp_mass_=0 then
+			temp_plm_mass=temp_mass_
+		end if
+
+		'ynnätään kokoonpanon massaan osan massa
+		mass=mass+temp_plm_mass
+
+		'asetetaan yksittäisen osan massa jos osa EI ole RELEASED
+		if NOT temp_maturity="RELEASED" then
+			temp_plmerr.SetAttributeValue("Weight_PLM"), CDbl(FormatNumber(temp_plm_mass,2))
+		end if	
+		
+
+		if temp_maturity="RELEASED" then
+			temp_warning="NOT updated!"
+		end if
+
+		message_text=message_text&"Item nr:"&temp_plmerr.name&", Computed or Declared W.:"&temp_plm_mass&" kg"&", Maturity:"&temp_maturity&", "&temp_warning&vbCrLf
+		'msgbox("Item nr:"&temp_plmerr.name&", Weight:"&temp_plm_mass&" kg")
+
+		'nollataan temp_mass_ ja temp_maturity
+		temp_mass_=0
+		temp_maturity=""
+		temp_warning=""
+
+next
+
+'asetetaan kokoonpanon massa jos kokoonpano EI ole RELEASED tilassa
+temp_maturity=oVPMEntityOnSelectedObject.GetAttributeValue("V_maturity")
+if NOT temp_maturity="RELEASED" then
+		oVPMEntityOnSelectedObject.SetAttributeValue("Weight_PLM"), CDbl(FormatNumber(mass,2))
+end if
+if temp_maturity="RELEASED" then
+		temp_warning="NOT updated!"
+end if
+	
+
+message_text=plme.Name&", Total weight:"&mass&" kg"&", Maturity:"&temp_maturity&", "&temp_warning&vbCrLf&message_text
+msgbox(message_text)
+
+
+
+
+end if
+
+'''''''''''''''''''''''''''''
+
+'''''''''''''''''''''''''''''jos kyseessä on pelkkä osa
+
+if plmeos.Count =0 then
+
+	
+
+	temp_plm_mass=oVPMEntityOnSelectedObject.GetAttributeValue("Weight_PLM")
+
+	On Error Resume Next
+			temp_mass_ =oVPMEntityOnSelectedObject.GetAttributeValue("V_WCG_Declared_Mass")
+			temp_mass_=oVPMEntityOnSelectedObject.GetAttributeValue("V_WCG_Mass")
+	On Error Goto 0
+
+	msgbox(FormatNumber(temp_mass_,2))
+
+	if temp_plm_mass=0 and NOT temp_mass_=0 then
+		temp_plm_mass=temp_mass_
+	end if
+
+	if NOT FormatNumber(temp_plm_mass,2)=FormatNumber(temp_mass_,2) and NOT temp_mass_=0 then
+		temp_plm_mass=temp_mass_
+	end if
+
+	oVPMEntityOnSelectedObject.SetAttributeValue("Weight_PLM"), CDbl(FormatNumber(temp_plm_mass,2))
+
+end if
+
+'''''''''''''''''''''''''''''
+
+
+
+End Sub
