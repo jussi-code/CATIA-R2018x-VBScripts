@@ -1,0 +1,46 @@
+Language="VBSCRIPT"
+
+Sub CATMain()
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'poimitaan partti taso osasta
+
+dim prep as PLMEntity
+set prep =CATIA.ActiveEditor.ActiveObject
+
+Dim  test2  As VPMReference
+Set  test2 = prep.ReferenceRootOccurrenceOf
+
+Dim  cListRepInstances As VPMRepInstances
+Set  cListRepInstances = test2.RepInstances
+
+Dim oVPMRepRef As VPMRepReference
+Set oVPMRepRef = cListRepInstances.item(1).ReferenceInstanceOf
+
+Set part1 = oVPMRepRef.GetItem("Part")
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'Dim root As PLMEntity
+'set root = CATIA.ActiveEditor.ActiveObject
+
+'Dim MatRef As Material
+'Dim ListDomain As MaterialDomains
+
+'set MatRef=root.Material
+
+'MatRef.GetDomains ListDomain
+
+
+dim params as Parameters
+set params = part1.Parameters
+
+dim ttext as string
+ttext=Cstr(params.Count)+vbCrlf
+
+for i=1 to 5'params.Count
+	ttext=ttext&vbCrlf&Cstr(params.Item(i).Name)+" "+Cstr(params.Item(i).Value)
+next	
+
+msgbox ttext
+
+End Sub
