@@ -1,0 +1,62 @@
+Dim Language As String
+Language="VBScript"
+
+
+
+
+Sub CATMain()
+
+
+
+		Dim MySheetBck as Sheet
+		set MySheetBck = CATIA.ActiveEditor.ActiveObject.Sheets.Item(1)	
+
+		Dim MyViews as DrawingViews
+		Set MyViews = MySheetBck.Views
+
+		Dim MyView as DrawingView
+		Set MyView = MyViews.Item(2)
+
+
+
+		Dim VPMRef As VPMReference
+		Dim CurGenView as DrawingGenView
+		Set CurGenView =MyViews.Item(3).DrawingGenView 
+		Set VPMRef = CurGenView.GetAssociatedRootProduct
+
+
+		'get 3D part number as a starting name for drawing, wait for user input to add a suffix
+
+  		Dim VPMRefD As VPMRepReference
+  		Set VPMRefD = CATIA.ActiveEditor.ActiveObject.Parent		
+
+		dim V_name_user as string
+		V_Name_user = inputbox("Give a drawing number","Drawing number",VPMRef.GetAttributeValue("PLM_ExternalID")	)
+
+
+ 	     VPMRefD.SetAttributeValue("V_Name"),VPMRef.GetAttributeValue("V_Name")
+  	 	VPMRefD.SetAttributeValue("PLM_ExternalID"),V_Name_user				
+	
+  		MyView.Texts.GetItem("TitleBlock_Text_Number_1").Text = V_Name_user
+
+
+
+End Sub
+
+' prevent sub from crashing if "X" clicked from the window
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+If CloseMode <> 1 Then Cancel = 1
+
+End Sub
+
+
+
+
+
+
+
+
+
+
+
