@@ -1,0 +1,141 @@
+Sub CATMain()
+
+
+dim main as VPMReference
+set main =CATIA.ActiveEditor.ActiveObject
+
+Dim  cListOccurrences As VPMOccurrences
+Set cListOccurrences = main.Occurrences
+
+'Dim  test2  As VPMReference
+'Set  test2 = prep.ReferenceRootOccurrenceOf
+
+dim test_text as String
+test_text=""
+
+Set oSelection = CATIA.ActiveEditor.Selection
+oSelection.Clear
+
+Dim item_list()
+redim item_list(1)
+item_list(1)=""
+
+Dim item_nr_list()
+Redim item_nr_list(1)
+item_nr_list(1)=0
+
+for n=1 to cListOccurrences.Count
+	
+	dim temp_plmei as VPMInstance
+	set temp_plmei = cListOccurrences.Item(n).InstanceOccurrenceOf
+
+	dim temp_plmer as VPMReference
+	set temp_plmer = temp_plmei.ReferenceInstanceOf
+
+	test_val=0
+	for f=1 to ubound(item_list)
+		if temp_plmer.Name = item_list(f) then
+				test_val=1
+		end if
+	next
+	if test_val=0 then
+			new_size=ubound(item_list)+1
+			redim preserve item_list(new_size)
+			item_list(new_size)=temp_plmer.Name
+
+			redim preserve item_nr_list(new_size)
+			item_nr_list(new_size)=n
+	end if
+next
+
+for r=1 to ubound(item_list)
+	test_text=test_text&VBCrlf&item_list(r)&":"&item_nr_list(r)
+next
+
+msgbox("List of items:"&VBCrlf&test_text)
+
+'xxxx
+
+for i=1 to ubound(item_nr_list)
+		
+
+		On Error Resume Next
+
+		dim plme as PLMEntities
+		set plme =CATIA.ActiveEditor.ActiveObject
+
+		dim plmeos as VPMOccurrences
+		set plmeos = plme.Occurrences
+
+		dim plmeo as VPMOccurrence
+		set plmeo = plmeos.Item(item_nr_list(i))
+
+		dim plmei as VPMInstance
+		set plmei = plmeo.InstanceOccurrenceOf
+
+		dim plmer as VPMReference
+		set plmer = plmei.ReferenceInstanceOf
+
+		dim plmeri as VPMRepInstance
+		set plmeri = plmer.RepInstances.Item(1)
+
+		dim plmerr as VPMRepReference
+		set plmerr = plmeri.ReferenceInstanceOf
+
+		dim temp_part as Part
+		set temp_part=plmerr.GetItem("Part") 
+
+
+		Set visPropertySet1 = oSelection.VisProperties
+
+		Set originElements1 =temp_part.OriginElements
+		Set axis_systems=temp_part.AxisSystems
+		Set geom_elements=temp_part.GeometricElements
+		Set geom_ordered_geom_sets=temp_part.OrderedGeometricalSets
+		Set temp_sketches=temp_part.Bodies.Item(1).Sketches
+
+
+		Set anyObject1 = originElements1.PlaneXY
+		oSelection.Add anyObject1
+		Set anyObject2 = originElements1.PlaneYZ
+		oSelection.Add anyObject2
+		Set anyObject3 = originElements1.PlaneZX
+		oSelection.Add anyObject3
+
+		for j=1 to axis_systems.Count
+			oSelection.Add axis_systems.Item(j)
+		next
+		j=1
+
+		for k=1 to geom_elements.Count
+			oSelection.Add geom_elements.Item(k)
+		next
+		k=1
+
+		for l=1 to temp_sketches.Count
+			oSelection.Add  temp_sketches.Item(l)
+		next
+		l=1
+
+		for m=1 to geom_ordered_geom_sets.Count
+			oSelection.Add  geom_ordered_geom_sets.Item(m)
+		next
+		m=1
+
+		visPropertySet1.SetShow 1
+
+		
+		'test_text=test_text&VBCrlf&plmerr.name
+		
+
+		oSelection.Clear
+
+
+next
+
+On Error Goto 0
+i=1
+
+
+
+End Sub
