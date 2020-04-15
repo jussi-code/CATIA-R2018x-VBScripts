@@ -1,0 +1,251 @@
+Language="VBSCRIPT"
+'''''''
+Sub CATMain()
+
+
+Dim MySheet as Sheet
+set MySheet = CATIA.ActiveEditor.ActiveObject.Sheets.Item(1)
+
+'msgbox(CATIA.Windows.Item(3).Name)
+
+
+
+'-----------------------DXF sivun putsaus (ei käytössä)----------------------------------------
+'Dim MyDXFSheet as Sheet
+'set MyDXFSheet = CATIA.ActiveEditor.ActiveObject.Sheets.Item("dxf")
+'---------------------------------------------------------------
+
+
+Dim MyViews as DrawingViews
+Set MyViews = MySheet.Views
+
+Dim MyView as DrawingView
+Set MyView = MyViews.Item(1)
+
+Dim MyViewFirst as DrawingView
+Set MyViewFirst = MyViews.Item(2)
+
+'-----------------------mahdollinen kenttien tyhjennys----------------------------------------
+'On error resume next
+'MyViewFirst.Texts.Remove("Material_Thickness")
+'MyViewFirst.Texts.Remove("Bending_Radius")
+'MyViewFirst.Texts.Remove("K_factor") 
+'MyViewFirst.Texts.Remove("DXF_Text") 
+'on error goto 0
+'---------------------------------------------------------------
+
+
+'-----------------------uusien kenttien luonti jos ei niitä ollut sivulla----------------------------------------
+
+dim i as integer
+dim seek as string
+seek="not found"
+
+for i=1 to MyViewFirst.Texts.Count
+	'if MyViewFirst.Texts.Count<4 then
+	if MyViewFirst.Texts.Item(i).Name="Material_Thickness" then	
+
+		seek="found"		
+	end if
+
+next
+
+if seek="not found" then
+		Dim DT_Material_Thickness as DrawingText
+		Set DT_Material_Thickness = MyViewFirst.Texts.Add(" ", 15, 35)
+		DT_Material_Thickness.Name="Material_Thickness"
+		DT_Material_Thickness.SetFontSize	0,0,3
+
+		Dim DT_Bending_Radius as DrawingText
+		Set DT_Bending_Radius = MyViewFirst.Texts.Add(" ", 15, 30)
+		DT_Bending_Radius.Name="Bending_Radius"
+		DT_Bending_Radius.SetFontSize		0,0,3
+
+		Dim DT_K_Factor as DrawingText
+		Set DT_K_Factor = MyViewFirst.Texts.Add(" ", 15, 25)
+		DT_K_Factor.Name="K_factor"
+		DT_K_Factor.SetFontSize	0,0,3
+
+		Dim DT_DXF_text as DrawingText
+		Set DT_DXF_text = MyViewFirst.Texts.Add(" ", 15, 20)
+		DT_DXF_text.Name="DXF_Text"
+		DT_DXF_text.SetFontSize	0,0,3
+end if
+
+'---------------------------------------------------------------
+
+On error resume next
+
+'-----------------------parent osan määritys----------------------------------------
+ Dim VPMRefD As VPMRepReference
+ Set VPMRefD = CATIA.ActiveEditor.ActiveObject.Parent		
+
+'-----------------------oikean avoimen ikkunan nimen määrittely----------------------------------------
+dim part_name as string
+part_name= Cstr(VPMRefD.GetAttributeValue("V_Name"))+" "+Cstr(VPMRefD.GetAttributeValue("PLM_ExternalID"))+" "+Cstr(VPMRefD.GetAttributeValue("V_version"))+".1:1"
+
+dim drawing_name as string
+drawing_name= Cstr(VPMRefD.GetAttributeValue("V_Name"))+" "+Cstr(VPMRefD.GetAttributeValue("PLM_ExternalID"))+" "+Cstr(VPMRefD.GetAttributeValue("V_version"))+".1:2"
+
+'msgbox(drawing_name)
+
+'-----------------------aktivoi partti ikkuna----------------------------------------
+CATIA.Windows.Item(part_name).Activate
+'msgbox(CATIA.Windows.Item(1).Name)
+
+
+'----------------------partti tason poiminta osasta ja parametrien määritys mistä haetaan----------------------------------------
+
+
+dim prep as PLMEntity
+set prep =CATIA.ActiveEditor.ActiveObject
+
+Dim  test2  As VPMReference
+Set  test2 = prep.ReferenceRootOccurrenceOf
+
+Dim  cListRepInstances As VPMRepInstances
+Set  cListRepInstances = test2.RepInstances
+
+Dim oVPMRepRef As VPMRepReference
+Set oVPMRepRef = cListRepInstances.item(1).ReferenceInstanceOf
+
+Set part1 = oVPMRepRef.GetItem("Part")
+
+dim params as Parameters
+set params = part1.Parameters
+
+
+If Err.Number <>0 Then
+	MsgBox("Vikaa vikaa! Poimi osasta ensin ylin taso aktiiviseksi, aja sen jälkeen komento uudelleen piirustuspuolella")
+	Exit Sub
+End If
+
+On error goto 0
+
+'----------------------parametrit---------------------------------------
+
+dim ttext as string
+ttext=Cstr(params.Count)+vbCrlf
+
+
+dim thickness as string
+dim bend_radius as string
+dim k_factor as string
+dim all_params as string
+dim proheight as string
+dim prowidth as string
+dim prolength as string
+
+thickness=""
+bend_radius=""
+k_factor=""
+proheight=""
+prowidth=""
+prolength=""
+
+'----------------------poimi oleelliset parametrit osasta ja niiden näyttö imputboxilla, poimii desc kentästä----------------------------------------
+
+On error resume next
+
+for i=1 to params.Count-1
+	ttext=vbCrlf&Cstr(params.Item(i).Name)+" "+Cstr(params.Item(i).Value)
+	if InStr(ttext,"Sheet Metal Parameters.1\Thickness")>0 then
+			thickness=Cstr(params.Item(i).Value)
+	end if
+
+	if InStr(ttext,"Sheet Metal Parameters.1\Bend Radius")>0 then
+			bend_radius=Cstr(params.Item(i).Value)
+	end if
+
+	if InStr(ttext,"Sheet Metal Parameters.1\KFactor")>0 then
+			k_factor=Cstr(params.Item(i).Value)
+	end if
+	
+	if InStr(ttext,"H-\Length")>0 and params.Item(i).Value>0 then
+			proheight=Cstr(FormatNumber(params.Item(i).Value,1))
+		elseif InStr(ttext,"H-\Distance")>0  and params.Item(i).Value>0 then
+			proheight=Cstr(FormatNumber(params.Item(i).Value,1))
+	end if
+
+	if InStr(ttext,"W-\Length")>0 and params.Item(i).Value>0 then
+			prowidth=Cstr(FormatNumber(params.Item(i).Value,1))
+		elseif InStr(ttext,"W-\Distance")>0  and params.Item(i).Value>0 then
+			prowidth=Cstr(FormatNumber(params.Item(i).Value,1))
+	end if
+
+	if InStr(ttext,"L-\Length")>0 and params.Item(i).Value>0 then
+			prolength=Trim(Cstr(FormatNumber(params.Item(i).Value,1)))
+		elseif InStr(ttext,"L-\Distance")>0  and params.Item(i).Value>0 then
+			prolength=Trim(Cstr(FormatNumber(params.Item(i).Value,1)))
+	end if
+
+	all_params=all_params+ttext
+
+next	
+
+On error goto 0
+
+dim temp_desc as string
+temp_desc=test2.GetAttributeValue("V_description")
+
+
+if thickness<>"" then
+	temp_desc=temp_desc+", "+"PL"+thickness
+end if
+
+if proheight <>"" then
+	temp_desc=temp_desc+"x"+proheight
+end if
+
+if prowidth <>"" then
+	temp_desc=temp_desc+"x"+prowidth
+end if
+
+if prolength <>"" then
+	temp_desc=temp_desc+" L="+trim(prolength)
+end if
+
+temp_desc=Replace(temp_desc,",0","")
+temp_desc= inputbox("Description of part",,temp_desc)
+
+test2.SetAttributeValue "V_description", temp_desc
+
+'----------------------parametrien täyttö tekstikenttään----------------------------------------
+
+On error resume next
+
+if thickness<>"" then
+	MyViewFirst.Texts.GetItem("Material_Thickness").Text = "Plate Thickness: "&thickness&"mm"
+	MyViewFirst.Texts.GetItem("DXF_Text").Text = "Unfolded view on page 2, scale 1:1"
+end if
+if bend_radius<>"" then
+	MyViewFirst.Texts.GetItem("Bending_Radius").Text = "General Bending Radius: R"&bend_radius
+end if
+if k_factor<>"" then
+	MyViewFirst.Texts.GetItem("K_factor").Text = "K-factor used: "&left(k_factor,5)
+end if
+
+
+
+MyViewFirst.Texts.GetItem("TitleBlock_Text_Title_22").Text = test2.GetAttributeValue("V_description")
+
+'msgbox(thickness&";"&bend_radius&";"&k_factor)
+
+On error goto 0
+
+
+'----------------------luo tarvittaessa tekstitiedoston kaikista osista----------------------------------------
+
+'Set objFSO=CreateObject("Scripting.FileSystemObject")
+'outFile="C:\Users\jussi.salakka\Desktop\parameters.txt"
+'Set objFile = objFSO.CreateTextFile(outFile,True)
+'objFile.Write all_params & vbCrLf
+'objFile.Close
+
+'-----------------------aktivoi drawing ikkuna----------------------------------------
+On error resume next
+CATIA.Windows.Item(drawing_name).Activate
+On error goto 0
+
+End Sub
+
