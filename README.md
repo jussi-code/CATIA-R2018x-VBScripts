@@ -8,4 +8,5 @@ I have added some of my VBScript macros from 3DExperience CATIA here.
 2. Rename Drawing macro
   This macro was made to enable user to add multiple drawings under same part or assembly. It allows to add a suffix for the drawing name(number).
   
-  
+3. Calculate weight for assembly or part
+  This script will calculate weight for a One level Assembly or part. It will scroll down all the parts in the first level of assembly (not drilling to sub-assemblies) and get either Calculated Mass or Declared Mass. It will also add this value for a custom parameter called "Weight_PLM" for each part and finally the assembly. Comments in finnish, apologies :)
