@@ -10,3 +10,6 @@ I have added some of my VBScript macros from 3DExperience CATIA here.
   
 3. Calculate weight for assembly or part
   This script will calculate weight for a One level Assembly or part. It will scroll down all the parts in the first level of assembly (not drilling to sub-assemblies) and get either Calculated Mass or Declared Mass. It will also add this value for a custom parameter called "Weight_PLM" for each part and finally the assembly. Comments in finnish, apologies :)
+ 
+4. Hide planes in assembly
+  This script will go through assembly first level parts and hide all sketches, planes, geometrical elements and axis systems from each part.
