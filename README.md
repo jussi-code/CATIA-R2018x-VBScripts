@@ -15,4 +15,4 @@ I have added some of my VBScript macros from 3DExperience CATIA here.
   This script will go through assembly first level parts and hide all sketches, planes, geometrical elements and axis systems from each part.
 
 5. Drawing part parameters
-  This script works on drawing app. It will fetch sheetmetal plate thickness, bending radius, K-factor and measurements W-,H- and L- from the parent part of the drawing. Values are written to drawing text elements. Parent part needs to be opened and top level selected manually before script works. W-,H- and L- are manually measured dimensions from part which have been named and saved to geometrical set.
+  This script works on drawing app. It will fetch sheetmetal plate thickness, bending radius, K-factor and measurements W-,H- and L- from the parent part of the drawing. Values are written to drawing text elements. Parent part needs to be opened and top level selected manually before script works. W-,H- and L- are manually measured dimensions from part which have been named and saved to geometrical set. Comments again in finnish
