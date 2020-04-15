@@ -1,0 +1,260 @@
+Dim Language As String
+Language="VBScript"
+
+
+
+
+Sub CATMain()
+
+
+
+
+
+dim i as integer
+
+' päivittää kaikkien sheettien viewit
+
+	for i=1 to CATIA.ActiveEditor.ActiveObject.Sheets.Count
+		
+		Dim MySheet as Sheet
+		set MySheet = CATIA.ActiveEditor.ActiveObject.Sheets.Item(i)
+
+		MySheet.Update
+
+	next
+
+	'Dim MySheetBOM as Sheet
+	'set MySheetBOM = CATIA.ActiveEditor.ActiveObject.Sheets.Item(1)
+
+	'Dim MyViewsBOM as DrawingViews
+	'Set MyViewsBOM = MySheetBOM.Views
+
+	'Dim MyViewBOM as DrawingView
+	'Set MyViewBOM = MyViewsBOM.Item(1)
+
+	'Dim MyTableBOM as DrawingTable
+	'set MyTableBOM = MyViewBOM.Tables.Item(1)
+
+	'dim MyTableName as string
+	'MyTableName=MyTableBOM.name
+
+	'msgbox(MyTableName&" ")
+	
+
+' päivitys kaikille sheeteille tärkeimmät piirustuksen atribuutit
+
+	dim nr_sheets as integer
+	nr_sheets = CATIA.ActiveEditor.ActiveObject.Sheets.Count
+
+	dim fields_filled as Boolean
+	fields_filled=False
+
+	for i=1 to CATIA.ActiveEditor.ActiveObject.Sheets.Count
+
+
+		Dim MySheetBck as Sheet
+		set MySheetBck = CATIA.ActiveEditor.ActiveObject.Sheets.Item(i)	
+
+		Dim MyViews as DrawingViews
+		Set MyViews = MySheetBck.Views
+
+		Dim MyView as DrawingView
+		Set MyView = MyViews.Item(2)
+
+		'Dim MyText As DrawingText
+ 		'Set MyText = MyView.Texts.Item(10)
+		'msgbox(MyText.Name)
+
+		Dim VPMRef As VPMReference
+		Dim CurGenView as DrawingGenView
+		Set CurGenView =MyViews.Item(3).DrawingGenView 
+		Set VPMRef = CurGenView.GetAssociatedRootProduct
+
+
+		
+
+		'kysyy checkerin ja approverin tiedot jos ei ole täytetty vielä, designer lisätään usernamella
+
+		dim designer_name as string
+		designer_name = CATIA.SystemService.Environ("USERNAME")
+		
+		On Error Resume Next		
+
+		if i=1 then
+			dim test_checker as string
+			test_checker = MyView.Texts.GetItem("TitleBlock_Text_Check_1").Text
+		end if
+
+		'msgbox(test_checker)
+		' tarkastetaan seuraavassa onko kentät jo olemassa vai ei
+
+		if 	test_checker="XXX" or test_checker="" and i=1 then
+
+			designer_name=InputBox("Designer name:",,MyView.Texts.GetItem("TitleBlock_Text_Drawn_1").Text)
+			
+			if fields_filled=0 then
+				dim checker_name as string
+				checker_name=InputBox("Checker name:")
+				'MsgBox("Checker"&checker_name)	
+
+				dim approver_name as string
+				approver_name=InputBox("Approver name:")
+				'MsgBox("Checker"&approver_name)
+		
+				fields_filled=True
+			end if
+
+			
+
+
+
+			MyView.Texts.GetItem("TitleBlock_Text_Check_1").Text=checker_name
+			MyView.Texts.GetItem("TitleBlock_Text_CDate_1").Text=""&Date
+			MyView.Texts.GetItem("TitleBlock_Text_Design_1").Text=approver_name
+			MyView.Texts.GetItem("TitleBlock_Text_DeDate_1").Text=""&Date
+			MyView.Texts.GetItem("TitleBlock_Text_Drawn_1").Text=designer_name
+			MyView.Texts.GetItem("TitleBlock_Text_DrDate_1").Text=""&Date
+				
+		end if
+
+		On Error Goto 0
+
+		'päivitetään atribuutit jos sivulla löytyy allla olevat tekstikentät
+		On Error Resume Next
+
+		MyView.Texts.GetItem("TitleBlock_Text_Rev_1").Text	= VPMRef.GetAttributeValue("V_version") ' revisio
+    		MyView.Texts.GetItem("TitleBlock_Text_Number_1").Text = VPMRef.GetAttributeValue("PLM_ExternalID")
+   		MyView.Texts.GetItem("TitleBlock_Text_Title_1").Text = VPMRef.GetAttributeValue("V_Name")
+		MyView.Texts.GetItem("TitleBlock_Text_Title_22").Text = VPMRef.GetAttributeValue("V_description")
+    		MyView.Texts.GetItem("TitleBlock_Text_Title_21").Text = VPMRef.GetAttributeValue("Description2")
+    		MyView.Texts.GetItem("TitleBlock_Material_Text_Name").Text = VPMRef.GetAttributeValue("Material_spec")	
+
+		'päivitetään sheet numberit
+
+		MyView.Texts.GetItem("TitleBlock_Text_Sheet_1").Text = CStr(i) & "/" & CStr(nr_sheets)
+			
+
+		'päivitetään piirustukselle nimeksi 3D part number
+
+  		Dim VPMRefD As VPMRepReference
+  		Set VPMRefD = CATIA.ActiveEditor.ActiveObject.Parent		
+
+ 	     VPMRefD.SetAttributeValue("V_Name"),VPMRef.GetAttributeValue("V_Name")
+  	 	VPMRefD.SetAttributeValue("PLM_ExternalID"),VPMRef.GetAttributeValue("PLM_ExternalID")					
+		
+  		'Finishing
+
+ 		dim temp_finishing as string
+  		temp_finishing = VPMRef.GetAttributeValue("Finishing")
+  		if len(temp_finishing)>0 then
+  			MyView.Texts.GetItem("TitleBlock_Text_Finishing_1").Text = "Finishing according to F38449 "+VPMRef.GetAttributeValue("Finishing")
+  		end if
+  		if len(temp_finishing)=0 then
+  			MyView.Texts.GetItem("TitleBlock_Text_Finishing_1").Text = ""
+  		end if
+
+		On Error Goto 0
+	
+		' painon laskenta
+
+		On Error Resume Next
+
+		dim j as integer
+				
+		if i=1 then
+
+		Dim MyViewBOM as DrawingView
+		Set MyViewBOM = MyViews.Item(1)
+
+		Dim MyTableBOM as DrawingTable
+		set MyTableBOM = MyViewBOM.Tables.Item(1)
+
+		 Dim BOM_mass_old as Double
+ 		 BOM_mass_old = 0
+
+  		Dim BOM_mass as Double
+ 		BOM_mass = 0
+
+		Dim table_size as Double
+		table_size = MyTableBOM.NumberOfRows
+
+		for j=1 to table_size-1
+			'mass calculated for both old BOM template type and new
+			Dim row_mass_old as Double
+		
+			row_mass_old=Replace(MyTableBOM.GetCellString(j,8),"kg","")
+		
+			Dim row_quantity_old as Double
+			row_quantity_old=MyTableBOM.GetCellString(j,2)
+		
+			BOM_mass_old=BOM_mass_old+row_mass_old*row_quantity_old
+		
+		next
+
+		for j=1 to table_size-1
+			'mass calculated for both old BOM template type and new
+		
+			Dim row_mass as Double
+		
+			row_mass=Replace(MyTableBOM.GetCellString(j,9),"kg","")	
+
+			Dim row_quantity as Double
+			row_quantity=MyTableBOM.GetCellString(j,2)		
+
+			BOM_mass=BOM_mass+row_mass*row_quantity
+		next
+		
+		end if	
+
+  	' Check if BOM mass found and update then with value >0
+
+	 if BOM_mass_old = 0 Then 
+		MyView.Texts.GetItem("TitleBlock_Text_Weight_1").Text = FormatNumber(BOM_mass,2)
+		'msgbox(MyView.Texts.GetItem("TitleBlock_Text_Weight_1").Text)
+	end if
+	if BOM_mass = 0 Then
+		MyView.Texts.GetItem("TitleBlock_Text_Weight_1").Text = FormatNumber(BOM_mass_old,2)
+		'msgbox(MyView.Texts.GetItem("TitleBlock_Text_Weight_1").Text)
+  	end if
+
+	if BOM_mass = 0 & BOM_mass_old =0 then
+		MyView.Texts.GetItem("TitleBlock_Text_Weight_1").Text = VPMRef.GetAttributeValue("Weight_PLM")
+		'msgbox(MyView.Texts.GetItem("TitleBlock_Text_Weight_1").Text)
+	end if
+
+		On Error Goto 0
+
+	
+	next
+
+
+	
+	
+	
+
+	'Dim table_size as Double
+	'table_size = MyTable.NumberOfRows
+
+
+	'If Err.Number <> 0 Then Err.Clear
+
+
+
+End Sub
+
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+If CloseMode <> 1 Then Cancel = 1
+
+End Sub
+
+
+
+
+
+
+
+
+
+
+
