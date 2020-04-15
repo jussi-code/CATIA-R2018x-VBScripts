@@ -19,3 +19,6 @@ I have added some of my VBScript macros from 3DExperience CATIA here.
   
  6. Part parameters
   This script will fetch part parameters and display them in message box. Part needs to be opened separately and top level selected.
+  
+7. Set attribute values
+  You can set attribute values of a part or assembly with this script.
