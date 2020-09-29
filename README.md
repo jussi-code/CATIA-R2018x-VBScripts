@@ -26,4 +26,7 @@ I have added some of my VBScript macros from 3DExperience CATIA here.
 8. Part dimensions
   This script will allow you to fetch description information from a part or assembly. It will also fetch parameters W-,H- and L- and Sheetmetal Thicnkess if available. It is very useful for checking and updating part description field with necessary dimensions.
   
+9. Copy attributes
+  This script will allow you to copy parameters from one part to another. It will populate all parameters except for part number which it will combine the first letter "N-" or "S-" from the old and use the number part from the new.
+  
   
