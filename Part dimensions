@@ -1,185 +1,174 @@
-Language="VBSCRIPT"
-
 Sub CATMain()
 
-dim plme as PLMEntities
-set plme =CATIA.ActiveEditor.ActiveObject
+'----------------------polku 1 jos ollaan kokoonpanossa ---------------------------------------
 
-dim plmeos as VPMOccurrences
-set plmeos = plme.Occurrences
+On error resume next
 
+	    dim plme as VPMOccurrence
+		set plme =CATIA.ActiveEditor.ActiveObject
 
+		dim plmei as VPMInstance
+		set plmei = plme.InstanceOccurrenceOf
 
-'''''''''''''''''''''''''''''katsoo onko valinta osa,alikokoonpano,pääkokoonpano
+		dim plmer as VPMReference
+		set plmer = plmei.ReferenceInstanceOf
 
-On Error Resume Next
-dim plment as PLMEntities
-set plment =CATIA.ActiveEditor.Selection
+		dim plmeri as VPMRepInstance
+		set plmeri = plmer.RepInstances.Item(1)
 
+		dim plmerr as VPMRepReference
+		set plmerr = plmeri.ReferenceInstanceOf
 
-'''''''''''''''''''odottaa käyttäjältä inputtia''''''''''''''''''''''''''''''''''''''''''
-Dim oInputObjectType(3)
-    oInputObjectType(3) = "AnyObject"
-    oInputObjectType(2) = "VPMRootOccurrence"
-    oInputObjectType(1) = "VPMOccurrence"
-    oInputObjectType(0) = "VPMRepInstance"
+		dim part1 as Part
+		set part1=plmerr.GetItem("Part") 
 
-Dim strStatus As String
-strStatus = plment.SelectElement(oInputObjectType, "Select a Element from spec tree", True)
+On error goto 0
 
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'----------------------polku 2 jos ollaan partissa ---------------------------------------
 
-dim sel
-set sel = plment.Item(1)
+On error resume next
+
+dim prep as PLMEntity
+set prep =CATIA.ActiveEditor.ActiveObject
+
+Dim  test2  As VPMReference
+Set  test2 = plme.ReferenceRootOccurrenceOf
+
+Dim  cListRepInstances As VPMRepInstances
+Set  cListRepInstances = test2.RepInstances
+
+Dim oVPMRepRef As VPMRepReference
+Set oVPMRepRef = cListRepInstances.item(1).ReferenceInstanceOf
+
+Set part1 = oVPMRepRef.GetItem("Part")
+
+dim params as Parameters
+set params = part1.Parameters
+
+On error goto 0
+
+'------------------------------------------------------------
 
 If Err.Number <>0 Then
-	MsgBox("Poimi osa tai kokoonpano")
-	Wscript.Quit
-	
-End if
+	MsgBox("Vikaa vikaa! Poimi osasta ensin ylin taso aktiiviseksi, aja sen jälkeen komento uudelleen piirustuspuolella")
+	Exit Sub
+End If
 
-'msgbox(sel.type)
+On error goto 0
 
-On Error Goto 0
+'----------------------parametrit---------------------------------------
 
-
-
-Dim oVPMOccOnSelectedObject As PLMOccurrence
-Set oVPMOccOnSelectedObject = sel.Value
-
-'polku 1 jos kyseessä komponentti tai kokoonpanon ylin taso
-On Error Resume Next
-Set oVPMEntityOnSelectedObject = oVPMOccOnSelectedObject.PLMEntity
-On Error Goto 0
-
-'polku 2 jos kyseessä alikokoonpano
-On Error Resume Next
-Dim oVPMInst As VPMInstance
-Set oVPMInst = oVPMOccOnSelectedObject.InstanceOccurrenceOf     
-Dim oVMPRef As VPMReference
-Set oVPMRef = oVPMInst.ReferenceInstanceOf
-Set oVPMEntityOnSelectedObject = oVPMRef
-On Error Goto 0
-
-'''''''''''''''''''''''''''''
-
-'oVPMEntityOnSelectedObject.SetAttributeValue("V_Thickness"), "2"
-'oVPMEntityOnSelectedObject.SetAttributeValue("V_fromExternalID"), ""
-
-msgbox("Picked part data from:"+oVPMEntityOnSelectedObject.GetAttributeValue("PLM_ExternalID"))
-
-dim temp_desc as string
-dim temp_title as string
-dim temp_bu as string
-dim temp_finishing as string
-dim temp_material_spec as string
-dim temp_desc2 as string
-dim temp_uom as string
-dim temp_comp_cat as string
-
-dim temp_id as string
-dim temp_id_start as string
-
-temp_desc = oVPMEntityOnSelectedObject.GetAttributeValue("V_description")
-temp_title = oVPMEntityOnSelectedObject.GetAttributeValue("V_Name")
-temp_bu = oVPMEntityOnSelectedObject.GetAttributeValue("Business_Unit")
-temp_finishing = oVPMEntityOnSelectedObject.GetAttributeValue("Finishing")
-temp_material_spec = oVPMEntityOnSelectedObject.GetAttributeValue("Material_spec")
-temp_desc2 = oVPMEntityOnSelectedObject.GetAttributeValue("Description2")
-temp_uom = oVPMEntityOnSelectedObject.GetAttributeValue("UOM")
-temp_comp_cat = oVPMEntityOnSelectedObject.GetAttributeValue("Component_Category")
-
-temp_id = oVPMEntityOnSelectedObject.GetAttributeValue("PLM_ExternalID")
-
-if Left(temp_id,1)="N" then
-	'msgbox("found N")
-	temp_id_start="N"
-end if
-
-if Left(temp_id,1)="S" then
-	'msgbox("found S")
-	temp_id_start="S"
-end if
+dim ttext as string
+ttext=Cstr(params.Count)+vbCrlf
 
 
-'msgbox("Select part to copy metadata to"+temp_value_to_copy)
+dim thickness as string
+dim bend_radius as string
+dim k_factor as string
+dim all_params as string
+dim proheight as string
+dim prowidth as string
+dim prolength as string
+dim pros as string
 
-plment.Clear
+thickness=""
+bend_radius=""
+k_factor=""
+proheight=""
+prowidth=""
+prolength=""
+pros=""
 
+'----------------------poimi oleelliset parametrit osasta ja niiden näyttö imputboxilla, poimii desc kentästä----------------------------------------
 
+On error resume next
 
-Dim oCurrentActiveEditor As Editor
-Set oCurrentActiveEditor = CATIA.ActiveEditor
-Dim oObjSelection
-Set oObjSelection = oCurrentActiveEditor.Selection
+for i=1 to params.Count-1
+	ttext=vbCrlf&Cstr(params.Item(i).Name)+" "+Cstr(params.Item(i).Value)
+	if InStr(ttext,"Sheet Metal Parameters.1\Thickness")>0 then
+			thickness=Cstr(params.Item(i).Value)
+	end if
 
+	if InStr(ttext,"Sheet Metal Parameters.1\Bend Radius")>0 then
+			bend_radius=Cstr(params.Item(i).Value)
+	end if
 
-
-'''''''''''''''''''odottaa käyttäjältä uutta valintaa''''''''''''''''''''''''''''''''''''''''''
-
-strStatus = oObjSelection.SelectElement(oInputObjectType, "Select a Element from spec tree", True)
-
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-if oObjSelection.Count = 1 Then
-
-	
-
-	set sel = plment.Item(1)
-	Set oVPMOccOnSelectedObject = sel.Value
-
-	'polku 1 jos kyseessä komponentti tai kokoonpanon ylin taso
-	On Error Resume Next
-	Set oVPMEntityOnSelectedObject = oVPMOccOnSelectedObject.PLMEntity
-	On Error Goto 0
-
-	'polku 2 jos kyseessä alikokoonpano
-	On Error Resume Next
-	
-	Set oVPMInst = oVPMOccOnSelectedObject.InstanceOccurrenceOf     
-	
-	Set oVPMRef = oVPMInst.ReferenceInstanceOf
-	Set oVPMEntityOnSelectedObject = oVPMRef
-	On Error Goto 0
-
-	'''''''''''''''''''''''''''''
-	
-	msgbox("new part selected and metadata updated with data from:"+temp_id)
-
-	''''''''''''''''''''''''''''' kirjoittaa uuden ID:n osalle '''''''''''''''''''''''''''''
-
-	dim temp_new_id as string
-	dim new_id as string
-	
-	temp_new_id = oVPMEntityOnSelectedObject.GetAttributeValue("PLM_ExternalID")
-
-	'''hakee osasta pelkän numero osuuden regexillä ja luo koodin uudelleen poimien alkuperäisen N- tai S- alun ja numeron uudesta''''
-	dim temp_new_id_numbers as string
-	Set oRE = New RegExp
-	oRE.Pattern = "[^0-9]*"
-	temp_new_id_numbers=oRE.Replace(temp_new_id, "")
-	temp_new_id=temp_id_start+temp_new_id_numbers
-
-	'''''''''''''''''''''''''''''
-
-	oVPMEntityOnSelectedObject.SetAttributeValue("V_description"), temp_desc
-	oVPMEntityOnSelectedObject.SetAttributeValue("V_Name"), temp_title 
-	oVPMEntityOnSelectedObject.SetAttributeValue("Business_Unit"), temp_bu 
-	oVPMEntityOnSelectedObject.SetAttributeValue("Finishing"), temp_finishing 
-	oVPMEntityOnSelectedObject.SetAttributeValue("Material_spec"), temp_material_spec 
-	oVPMEntityOnSelectedObject.SetAttributeValue("Description2"), temp_desc2 
-	oVPMEntityOnSelectedObject.SetAttributeValue("UOM"), temp_uom 
-	oVPMEntityOnSelectedObject.SetAttributeValue("Component_Category"), temp_comp_cat
-
-	if temp_id_start = "N" then	
-		oVPMEntityOnSelectedObject.SetAttributeValue("PLM_ExternalID"), temp_new_id
-	elseif temp_id_start = "S" then
-		oVPMEntityOnSelectedObject.SetAttributeValue("PLM_ExternalID"), temp_new_id
-	else	
-		
+	if InStr(ttext,"Sheet Metal Parameters.1\KFactor")>0 then
+			k_factor=Cstr(params.Item(i).Value)
 	end if
 	
+	if InStr(ttext,"H-\Length")>0 and params.Item(i).Value>0 then
+			proheight=Cstr(FormatNumber(params.Item(i).Value,1))
+		elseif InStr(ttext,"H-\Distance")>0  and params.Item(i).Value>0 then
+			proheight=Cstr(FormatNumber(params.Item(i).Value,1))
+	end if
+
+	if InStr(ttext,"W-\Length")>0 and params.Item(i).Value>0 then
+			prowidth=Cstr(FormatNumber(params.Item(i).Value,1))
+		elseif InStr(ttext,"W-\Distance")>0  and params.Item(i).Value>0 then
+			prowidth=Cstr(FormatNumber(params.Item(i).Value,1))
+	end if
+
+	if InStr(ttext,"L-\Length")>0 and params.Item(i).Value>0 then
+			prolength=Trim(Cstr(FormatNumber(params.Item(i).Value,1)))
+		elseif InStr(ttext,"L-\Distance")>0  and params.Item(i).Value>0 then
+			prolength=Trim(Cstr(FormatNumber(params.Item(i).Value,1)))
+	end if
+
+	if InStr(ttext,"S-\Length")>0 and params.Item(i).Value>0 then
+			pros=Trim(Cstr(FormatNumber(params.Item(i).Value,1)))
+		elseif InStr(ttext,"S-\Distance")>0  and params.Item(i).Value>0 then
+			pros=Trim(Cstr(FormatNumber(params.Item(i).Value,1)))
+	end if
+
+	all_params=all_params+ttext
+
+next	
+
+On error goto 0
+
+'----------------------polku 1 jos ollaan kokoonpanossa ---------------------------------------
+On error resume next
+dim temp_desc as string
+temp_desc=plmer.GetAttributeValue("V_description")
+On error goto 0
+'----------------------polku 2 jos ollaan partissa ---------------------------------------
+On error resume next
+temp_desc=test2.GetAttributeValue("V_description")
+On error goto 0
+
+if thickness<>"" then
+	temp_desc=temp_desc+", "+"PL"+thickness
 end if
+
+if proheight <>"" then
+	temp_desc=temp_desc+"-"+proheight
+end if
+
+if prowidth <>"" then
+	temp_desc=temp_desc+"x"+prowidth
+end if
+
+if pros <>"" then
+	temp_desc=temp_desc+"x"+pros
+end if
+
+if prolength <>"" then
+	temp_desc=temp_desc+" L="+trim(prolength)
+end if
+
+
+temp_desc=Replace(temp_desc,",0","")
+temp_desc= inputbox("Description of part",,temp_desc)
+
+'----------------------polku 1 jos ollaan kokoonpanossa ---------------------------------------
+On error resume next
+plmer.SetAttributeValue "V_description", temp_desc
+On error goto 0
+'----------------------polku 2 jos ollaan partissa ---------------------------------------
+On error resume next
+test2.SetAttributeValue "V_description", temp_desc
+On error goto 0
 
 
 End Sub
