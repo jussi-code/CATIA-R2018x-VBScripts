@@ -22,3 +22,8 @@ I have added some of my VBScript macros from 3DExperience CATIA here.
   
 7. Change part attribute
   You can set attribute values of a part or assembly with this script.
+
+8. Part dimensions
+  This script will allow you to fetch description information from a part or assembly. It will also fetch parameters W-,H- and L- and Sheetmetal Thicnkess if available. It is very useful for checking and updating part description field with necessary dimensions.
+  
+  
